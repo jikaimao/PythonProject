@@ -550,6 +550,4 @@ def DVBT_T2_function_test(used_instype, fpga_mode):  # fpga_mode "T1":DVBT  "T2"
 
 
 if __name__ == "__main__":
-    # DVBT_T2_function_test("BTC", "T2")
-    #DVBC_FGPA_PerformanceTest()
     TV_Performance_Test("CHIP")
