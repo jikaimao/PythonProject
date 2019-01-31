@@ -7,6 +7,7 @@ case_num = 1
 test_case_list = []
 def TV_Performance_Test(test_board_type,instrumentType="RSSFU"):
     test_flow = "DVBC_TEST_FLOW.txt"
+    bypass_mode = False
     InstrumentObject = Instrument(instrumentType)
     if not InstrumentObject.connect_instrument():
         return
@@ -14,16 +15,28 @@ def TV_Performance_Test(test_board_type,instrumentType="RSSFU"):
     if not SerialObject.open_status:
         print("Exit test process!\n")
         return
-    test_main(instrumentType,InstrumentObject,SerialObject,test_flow,test_board_type)
+    with open(test_flow,"r") as f:
+        for i in f.readlines():
+            if i.find("bypass") != -1:
+                print("Enter bypass Mode!\n")
+                bypass_mode = True
+    if not bypass_mode:
+        if test_board_type == "FPGA":
+            SerialObject.send_command_to_serial(FPGASerialCommandDict["enterMyTool"])
+            SerialObject.send_command_to_serial(FPGASerialCommandDict["SetFPGA_DVBT_Mode"])
+        elif test_board_type == "CHIP":
+            SerialObject.send_command_to_serial(DTMB_CHIP_Serial_commandDict["enterMyTool"])
+    test_main(instrumentType,InstrumentObject,SerialObject,test_flow,test_board_type,bypass_mode)
     InstrumentObject.close_instrument_handle()
     SerialObject.close_serial_port_stop_thread()
-def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_type):
+def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_type,bypass_mode):
     save_pre_file_data = {}
-    file_data = {}
     with open(file_name,"r") as config_file:
         parameters_list = config_file.readlines()
         for parameter in parameters_list:
             if not string_is_valid(parameter):
+                continue
+            elif parameter in ["\n","\r","\r\n"]:
                 continue
             file_data = dict(zip(parameter.strip().split(":")[::2],
                                              parameter.strip().split(":")[1::2]))
@@ -36,6 +49,8 @@ def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_
                         InstrumentObject.set_other_command(InstrumentCommandDict[status])
                 InstrumentObject.set_standard_to_instrument(InstrumentStandardDict[instrumentType][file_data["Mode"]])
                 save_pre_file_data = file_data
+            if "TestCase" in parmarameters_keys:
+                save_pre_file_data["TestCase"] = file_data["TestCase"]
             if "Frequence" in parmarameters_keys:
                 print(file_data["Frequence"])
                 InstrumentObject.set_instrument_freq(file_data["Frequence"],"MHz")
@@ -43,33 +58,34 @@ def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_
                 print(file_data["PowerLevel"])
                 InstrumentObject.set_instrument_level(file_data["PowerLevel"],"dBuV")
             if "Modulation" in parmarameters_keys:
-                modulation_command = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["Modulation"][file_data["Modulation"]]
+                modulation_command = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["Modulation"][file_data["Modulation"]]
                 print(modulation_command)
                 InstrumentObject.set_other_command(modulation_command)
             if "FFT" in parmarameters_keys:
-                fft_command = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["FFT"][file_data["FFT"]]
+                fft_command = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["FFT"][file_data["FFT"]]
                 print(fft_command)
                 InstrumentObject.set_other_command(fft_command)
             if "GI" in parmarameters_keys:
-                gi_command = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["GI"][file_data["GI"]]
+                gi_command = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["GI"][file_data["GI"]]
                 print(gi_command)
                 InstrumentObject.set_other_command(gi_command)
             if "CodeRate" in parmarameters_keys:
-                code_command = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["CodeRate"][file_data["CodeRate"]]
+                code_command = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["CodeRate"][file_data["CodeRate"]]
                 InstrumentObject.set_other_command(code_command)
                 print(code_command)
             if "Pilot" in parmarameters_keys:
-                pilot_command = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["Pilot"][file_data["Pilot"]]
+                pilot_command = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["Pilot"][file_data["Pilot"]]
                 print(pilot_command)
                 InstrumentObject.set_other_command(pilot_command)
             if "BW" in parmarameters_keys:
-                bw_command = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["BW"]
+                bw_command = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["BW"]
                 print(bw_command)
                 #InstrumentObject.set_other_command(bw_command)
             if "WorkMode" in parmarameters_keys:
-                work_mode_list = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["WorkMode"][file_data["WorkMode"]]
+                work_mode_list = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["WorkMode"][file_data["WorkMode"]]
                 for command in work_mode_list:
                     InstrumentObject.set_other_command(command)
+                print("WorkMode:%s\n"%file_data["WorkMode"])
             if "FadingGroup" in parmarameters_keys:
                 InstrumentObject.set_fader_default()
                 InstrumentObject.set_other_command(InstrumentCommandDict["FadingON"])
@@ -95,42 +111,42 @@ def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_
                         InstrumentObject.set_fader_pathloss(gro[i],pat[i],pathloss[i])
                         InstrumentObject.set_basic_delay(gro[i],float(basic_delay[i]))
             if "SymbolRate" in parmarameters_keys:
-                symbol_command= Instrument_Setting_Command[instrumentType][file_data["Mode"]]["SymbolRate"] + file_data["SymbolRate"] + "e6\n"
+                symbol_command= Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["SymbolRate"] + file_data["SymbolRate"] + "e6\n"
                 InstrumentObject.set_other_command(symbol_command)
             if "AwgnValue" in parmarameters_keys:
                 InstrumentObject.set_other_command(InstrumentCommandDict["NoiseADD"])
                 InstrumentObject.set_other_command(InstrumentCommandDict["NoiseAWGN_ON"])
                 awgn_value = string_to_list(file_data["AwgnValue"])
                 parameter_type = "AWGN"
-                awgn_command_string = Instrument_Setting_Command[instrumentType][file_data["Mode"]]["AwgnValue"] + file_data["AwgnValue"] + "\n"
+                awgn_command_string = Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["AwgnValue"] + file_data["AwgnValue"] + "\n"
                 InstrumentObject.set_other_command(awgn_command_string)
-            if "TestCase" in parmarameters_keys:
-                if file_data["Mode"] == "DVBC":
+            if not bypass_mode:
+                if save_pre_file_data["Mode"] == "DVBC":
                     DVBC_PerformanceTest(test_board_type,InstrumentObject,SerialObject)
-                elif file_data["Mode"] == "DVBT2":
+                elif save_pre_file_data["Mode"] == "DVBT2":
                     DVBT2_PerformanceTest(test_board_type,parameter_type,InstrumentObject,SerialObject,file_data)
-                elif file_data["Mode"] == "DVBT":
+                elif save_pre_file_data["Mode"] == "DVBT":
                     pass
-                elif file_data["Mode"] == "J83B":
+                elif save_pre_file_data["Mode"] == "J83B":
                     pass
-                elif file_data["Mode"] == "DTMB":
+                elif save_pre_file_data["Mode"] == "DTMB":
                     DTMB_PerformanceTest(test_board_type,parameter_type,InstrumentObject,SerialObject,save_pre_file_data,file_data)
-                    
-            
 def DVBC_PerformanceTest(test_board_type,InstrumentObject,SerialObject):
     pass
 def DVBT2_PerformanceTest(test_board_type,parameter_type,InstrumentObject,SerialObject,file_data):
-    if test_board_type == "FPGA":
-        SerialObject.send_command_to_serial(FPGASerialCommandDict["enterMyTool"])
-        SerialObject.send_command_to_serial(FPGASerialCommandDict["SetFPGA_DVBT_Mode"])
         test_case = "{}_{}".format(file_data["Mode"],file_data["TestCase"])
         
         adjust_parameter_record_result(SerialObject, InstrumentObject, test_case,
                                        float(file_data["AwgnValue"]), parameter_type,
                                        float(file_data["Step"]),file_data["BW"],TestBoardType = "FPGA",cpture_enble = True)
 def DTMB_PerformanceTest(test_board_type,parameter_type,InstrumentObject,SerialObject,save_pre_file_data,file_data):
-    if test_board_type == "CHIP":
-        SerialObject.send_command_to_serial(DTMB_CHIP_Serial_commandDict["enterMyTool"])
+    test_case = "{}_{}".format(save_pre_file_data["Mode"],save_pre_file_data["TestCase"])
+    step = float(save_pre_file_data["Step"])
+    if test_case == "DTMB_AWGN_TEST":
+        parameter_value = float(file_data["AwgnValue"])
+        ParametersType = "AWGN"
+    adjust_parameter_record_result(SerialObject, InstrumentObject, test_case,parameter_value,ParametersType,step)
+
 def string_to_list(string):
     value = string.strip().split(",")
     if len(value) == 1:
@@ -347,7 +363,11 @@ def record_abnormal_test_result(test_case,case_num,ParametersType,ParametersValu
 def confirm_parameters_value_direction(result,test_case,ParametersType,ParametersValue):
     if result in ("Unlocked", "lockedNotEqual"):
         print("Current {}:{}\n".format(ParametersType, ParametersValue))
-        if test_case in ("DVBC_MINRXLEVEl_TEST", "DVBC_E/D_TEST", "DVBC_E/D_FIVE_ROAD_TEST","DVBC_AWGN_TEST","DVBT2_AWGN_TEST"):
+        if test_case in ("DVBC_MINRXLEVEl_TEST", "DVBC_E/D_TEST",
+                         "DVBC_E/D_FIVE_ROAD_TEST",
+                         "DVBC_AWGN_TEST",
+                         "DVBT2_AWGN_TEST",
+                         "DTMB_AWGN_TEST"):
             print("Adjust parameters_direction:UP\n")
             return "UP"
         elif test_case in ("DVBC_MAXRXLEVEl_TEST"):
@@ -355,7 +375,9 @@ def confirm_parameters_value_direction(result,test_case,ParametersType,Parameter
             return "DOWN"
     elif result is "lockedEqual":
         print("Current {}:{}\n".format(ParametersType, ParametersValue))
-        if test_case in ("DVBC_MINRXLEVEl_TEST", "DVBC_E/D_TEST", "DVBC_E/D_FIVE_ROAD_TEST","DVBC_AWGN_TEST","DVBT2_AWGN_TEST"):
+        if test_case in ("DVBC_MINRXLEVEl_TEST", "DVBC_E/D_TEST", "DVBC_E/D_FIVE_ROAD_TEST",
+                         "DVBC_AWGN_TEST","DVBT2_AWGN_TEST",
+                         "DTMB_AWGN_TEST"):
             print("Adjust parameters_direction:DOWN\n")
             return "DOWN"
         elif test_case in ("DVBC_MAXRXLEVEl_TEST"):
@@ -365,7 +387,7 @@ def select_send_para_command_type(test_case,InstrumentObject,ParametersValue):
     if test_case in ("DVBC_MINRXLEVEl_TEST", "DVBC_MAXRXLEVEl_TEST"):
         InstrumentObject.set_instrument_level(ParametersValue, "dBuV")
         return
-    elif test_case in ("DVBC_AWGN_TEST","DVBT2_AWGN_TEST"):
+    elif test_case in ("DVBC_AWGN_TEST","DVBT2_AWGN_TEST","DTMB_AWGN_TEST"):
         awgn_command = DVBC_Set_InstrumentDict["SetAwgn"] + str(ParametersValue) + "\n"
         InstrumentObject.set_other_command(awgn_command)
         return
@@ -400,8 +422,7 @@ def adjust_parameter_record_result(SerialObject, InstrumentObject, test_case,
             if test_case == "DVBT2_AWGN_TEST":
                 SerialObject.send_command_to_serial(FPGASerialCommandDict["SetFPGA_T2_Mode"])
                 SerialObject.send_command_to_serial(FPGASerialCommandDict["bw_select"][BW])
-    result = JudgePerLockedResult(SerialObject)
-    print("test case --->{}\n".format(test_case))
+    result = JudgePerLockedResult(SerialObject,test_case)
     direct = confirm_parameters_value_direction(result,test_case,ParametersType,temp)
     if result in ("Unlocked", "lockedNotEqual"):
         while True:
@@ -416,10 +437,10 @@ def adjust_parameter_record_result(SerialObject, InstrumentObject, test_case,
                    captuer_data(SerialObject)
                    SerialObject.send_command_to_serial(FPGASerialCommandDict["SetFPGA_T2_Mode"])
                    SerialObject.send_command_to_serial(FPGASerialCommandDict["bw_select"][BW])
-            print("Current {}:{}\n".format(ParametersType, temp))
-            result = JudgePerLockedResult(SerialObject)
+            print("Current %s:%.1f\n"%(ParametersType, temp))
+            result = JudgePerLockedResult(SerialObject,test_case)
             if result in ("lockedEqual"):
-                result_string = "case[{}] {}:{}\n".format(case_num, ParametersType, temp)
+                result_string = "case[%s] %s:%.1f\n"%(case_num, ParametersType, temp)
                 print(result_string)
                 write_data_to_file(file_name,result_string)
                 break
@@ -438,24 +459,24 @@ def adjust_parameter_record_result(SerialObject, InstrumentObject, test_case,
                     SerialObject.send_command_to_serial(FPGASerialCommandDict["exitMyTool"])
                     SerialObject.send_command_to_serial(FPGASerialCommandDict["SetFPGA_T2_Mode"])
                     SerialObject.send_command_to_serial(FPGASerialCommandDict["bw_select"][BW])
-            print("Current {}:{}\n".format(ParametersType, temp))
-            result = JudgePerLockedResult(SerialObject)
+            print("Current %s:%.1f\n"%(ParametersType, temp))
+            result = JudgePerLockedResult(SerialObject,test_case)
             if result in ("Unlocked", "lockedNotEqual"):
-                result_string = "case[{}] {}:{}\n".format(case_num, ParametersType, temp)
+                result_string = "case[%s] %s:%.1f\n"%(case_num, ParametersType, temp)
                 print(result_string)
                 write_data_to_file(file_name,result_string)
                 break
             if record_abnormal_test_result(test_case,case_num,ParametersType,temp):
                 break
     case_num += 1
-def JudgePerLockedResult(SerialObject):
-    #time.sleep(LockedDelay)
-    #SerialObject.send_command_to_serial(DVBC_CHIP_Serial_commandDict["GetLockedStatus"])
+def JudgePerLockedResult(SerialObject,test_case):
+    time.sleep(LockedDelay)
+    SerialObject.send_command_to_serial(GetLockStatus)
     perList = []
     if SerialObject.get_locked_status():
         for cnt in range(5):
             time.sleep(ReadPerGuardTime)
-            perList.append(SerialObject.getPerValue(DVBC_CHIP_Serial_commandDict["GetPer"]))
+            perList.append(SerialObject.getPerValue(GetPerValue))
             if cnt >= 1:
                 if abs(int(perList[cnt]) - int(perList[cnt - 1])) > 1:
                     return "lockedNotEqual"  # locked but is not equal

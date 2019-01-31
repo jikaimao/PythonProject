@@ -4,7 +4,9 @@ from functools import reduce
 
 LockedDelay = 20
 ReadPerTime = 5
-ReadPerGuardTime = 10
+ReadPerGuardTime = 5
+GetLockStatus = ["98\r"]
+GetPerValue = ["99\r"]
 FPGASerialCommandDict = {
     "enterMyTool": ["./demod_tool\r"],
     "exitMyTool": ["999\r"],
@@ -87,10 +89,10 @@ code_key_list = ["1/2","R1_2","2/3","R2_3","3/4","R3_4","5/6",
 Pilot_list = ["PP%s" % i for i in range(1, 9)]
 T2_Pilot_Command = ["T2DV:PIL PP%s\n" % i for i in range(1, 9)]
 T2Pilot_Command = dict(zip(Pilot_list, T2_Pilot_Command))
-DTMB_workMode = {"1":["DTMB:NETW MFN\n","DTMB:SING OFF\n","DTMB:FRAMes OFF\n","DTMB:CONS D16\n",
+DTMB_workMode = {"1":["DTMB:NETW MFN\n","DTMB:SING OFF\n","DTMB:FRAM OFF\n","DTMB:CONS D16\n",
                     "DTMB:RATE R04\n","DTMB:GUAR G945\n","DTMB:GIC VAR\n","DTMB:TIME I720\n",
                     "DTMB:CHAN BW_8\n","DM:POL NORM\n"],
-                 "2":["DTMB:NETW MFN","DTMB:SING ON\n","DTMB:DUAL:PIL OFF\n","DTMB:FRAMes OFF\n",
+                 "2":["DTMB:NETW MFN","DTMB:SING ON\n","DTMB:DUAL:PIL OFF\n","DTMB:FRAM OFF\n",
                       "DTMB:CONS D4\n","DTMB:RATE R08\n","DTMB:GUAR G595\n","DTMB:GIC CONS\n",
                       "DTMB:TIME I720\n","DTMB:CHAN BW_8\n","DM:POL NORM\n"],
                  "3":["DTMB:NETW MFN\n","DTMB:SING OFF\n","DTMB:FRAMes OFF\n","DTMB:CONS D16\n",
@@ -105,7 +107,7 @@ DTMB_workMode = {"1":["DTMB:NETW MFN\n","DTMB:SING OFF\n","DTMB:FRAMes OFF\n","D
                  "6":["DTMB:NETW MFN\n","DTMB:SING OFF\n","DTMB:FRAMes OFF\n","DTMB:CONS D64\n",
                       "DTMB:RATE R06\n","DTMB:GUAR G420\n","DTMB:GIC VAR\n","DTMB:TIME I720\n",
                       "DTMB:CHAN BW_8\n","DM:POL NORM\n"],
-                 "7":["DTMB:NETW MFN\n","DTMB:SING ON\n","DTMB:DUAL:PIL OFF\n","DTMB:FRAMes OFF\n",
+                 "7":["DTMB:NETW MFN\n","DTMB:SING ON\n","DTMB:DUAL:PIL OFF\n","DTMB:FRAM OFF\n",
                       "DTMB:CONS D32\n","DTMB:RATE R08\n", "DTMB:GUAR G595\n", "DTMB:GIC CONS\n",
                       "DTMB:TIME I720\n","DTMB:CHAN BW_8\n","DM:POL NORM\n"],
                  "8":["DTMB:NETW MFN\n","DTMB:SING OFF\n","DTMB:FRAMes OFF\n","DTMB:CONS D16\n",
