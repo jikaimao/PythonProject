@@ -86,30 +86,38 @@ def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_
                 for command in work_mode_list:
                     InstrumentObject.set_other_command(command)
                 print("WorkMode:%s\n"%file_data["WorkMode"])
-            if "FadingGroup" in parmarameters_keys:
+            if "FadingFine" in parmarameters_keys:
                 InstrumentObject.set_fader_default()
                 InstrumentObject.set_other_command(InstrumentCommandDict["FadingON"])
-                gro = string_to_list(file_data["FadingGroup"])
-                pat = string_to_list(file_data["FadingPath"])
-                pathloss = string_to_list(file_data["Pathloss"])
-                basic_delay = string_to_list(file_data["BasicDelay"])
-                if "Doppler" in parmarameters_keys:
-                    dop = string_to_list(file_data["Doppler"])
-                    for i in range(len(gro)):
-                        print(gro[i],pat[i],dop[i])
-                        if float(dop[i]) > 0:
-                            InstrumentObject.set_fader_profile_status("ON",gro[i],pat[i],"PDOP")
-                            InstrumentObject.set_fader_doppler(gro[i],pat[i],dop[i])
-                        else:
-                            InstrumentObject.set_fader_profile_status("ON",gro[i],pat[i],"SPAT")
-                        InstrumentObject.set_fader_pathloss(gro[i],pat[i],pathloss[i])
-                        InstrumentObject.set_basic_delay(gro[i],float(basic_delay[i]))
-                        
-                else:
-                    for i in range(len(gro)):
-                        InstrumentObject.set_fader_profile_status("ON",gro[i],pat[i],"SPAT")
-                        InstrumentObject.set_fader_pathloss(gro[i],pat[i],pathloss[i])
-                        InstrumentObject.set_basic_delay(gro[i],float(basic_delay[i]))
+                fadFineList = string_to_list(file_data["FadingFine"])
+                for i in range(len(fadFineList)):
+                    gro,path = get_gro_path_value(fadFineList[i])
+                    if "Static" in parmarameters_keys:
+                        static_value = string_to_list(file_data["Static"])
+                        if int(static_value[i]) > 0:
+                            InstrumentObject.set_fader_profile_status("ON",gro,path,"SPAT")
+                            print("Static Fine{} Path{}".format(gro,path))
+                    if "Rice" in parmarameters_keys:
+                        rice_value = string_to_list(file_data["Rice"])
+                        if int(rice_value[i]) > 0:
+                            InstrumentObject.set_fader_profile_status("ON",gro,path,"RICE")
+                            print("Rice Fine{} Path{}".format(gro,path))
+                    if "Doopler" in parmarameters_keys:
+                        doopler_value = string_to_list(file_data["Doopler"])
+                        if int(doopler_value[i]) > 0:
+                            InstrumentObject.set_fader_profile_status("ON",gro,path,"PDOP")
+                            InstrumentObject.set_fader_doppler(gro,path,doopler_value[i])
+                            print("Doopler Fine{} Path{} Value:{}".format(gro,path,doopler_value[i]))
+                    if "PathLoss" in parmarameters_keys:
+                        path_loss = string_to_list(file_data["PathLoss"])
+                        if int(path_loss[i]) > 0:
+                            InstrumentObject.set_fader_pathloss(gro,path,path_loss[i])
+                            print("PathLoss Fine{} Path{} Value:{}".format(gro,path,path_loss[i]))
+                    if "BasicDelay" in parmarameters_keys:
+                        basic_delay = string_to_list(file_data["BasicDelay"])
+                        if int(basic_delay[i]) > 0:
+                            InstrumentObject.set_basic_delay(gro,path,float(basic_delay[i]))
+                            print("BasicDelay Fine{} Path{} Value:{}".format(gro,path,basic_delay[i]))
             if "SymbolRate" in parmarameters_keys:
                 symbol_command= Instrument_Setting_Command[instrumentType][save_pre_file_data["Mode"]]["SymbolRate"] + file_data["SymbolRate"] + "e6\n"
                 InstrumentObject.set_other_command(symbol_command)
@@ -131,6 +139,11 @@ def test_main(instrumentType,InstrumentObject,SerialObject,file_name,test_board_
                     pass
                 elif save_pre_file_data["Mode"] == "DTMB":
                     DTMB_PerformanceTest(test_board_type,parameter_type,InstrumentObject,SerialObject,save_pre_file_data,file_data)
+def get_gro_path_value(fadFineNumber):
+    if int(fadFineNumber)%5 == 0:
+        return (int(int(fadFineNumber)/5),5)
+    else:
+        return (int(int(fadFineNumber)/5)+1,int(fadFineNumber)%5)
 def DVBC_PerformanceTest(test_board_type,InstrumentObject,SerialObject):
     pass
 def DVBT2_PerformanceTest(test_board_type,parameter_type,InstrumentObject,SerialObject,file_data):
