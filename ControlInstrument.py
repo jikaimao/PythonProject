@@ -75,12 +75,6 @@ class Instrument(object):
             return False
     def set_fader_doppler(self,group,path,doppler):
         try:
-            if self.instrumnetType == "BTC":
-                self.instrument.write("FSIM:KCON DSH\n")
-                time.sleep(2)
-            elif self.instrumnetType == "RSSFU":
-                self.instrument.write("FSIM:REF FDOP\n")
-                time.sleep(2)
             self.instrument.write("FSIM:DEL:GRO{}:PATH{}:FDOP {}\n".format(group,path,doppler))
             time.sleep(2)
             self.instrument.write("FSIM:DEL:GRO{}:PATH{}:FRAT 1\n".format(group,path))
@@ -105,6 +99,13 @@ class Instrument(object):
         except:
             print("Set basic delay failed!\n")
             return False
+    def set_fading_reference(self):
+        if self.instrumnetType == "BTC":
+            self.instrument.write("FSIM:KCON DSH\n")
+            time.sleep(2)
+        elif self.instrumnetType == "RSSFU":
+            self.instrument.write("FSIM:REF FDOP\n")
+            time.sleep(2)
     def close_instrument_handle(self):
         self.instrument.close()
 if __name__ == "__main__":
