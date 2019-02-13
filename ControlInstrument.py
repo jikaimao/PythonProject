@@ -106,6 +106,12 @@ class Instrument(object):
         elif self.instrumnetType == "RSSFU":
             self.instrument.write("FSIM:REF FDOP\n")
             time.sleep(2)
+    def set_const_phase(self,group,path,deg):
+        try:
+            self.instrument.write("FSIM:DEL:GRO{}:PATH{}:CPH {}DEG\n".format(group,path,deg))
+            time.sleep(1)
+        except:
+            print("Set const phase failed!\n")
     def close_instrument_handle(self):
         self.instrument.close()
 if __name__ == "__main__":

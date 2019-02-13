@@ -55,7 +55,7 @@ class SerialPort(object):
         time.sleep(3)
     def get_locked_status(self):# fpga mode include DVBT/DVBT2/J83B/DVBC
         self.temp = []
-        for i in range(100):
+        for i in range(300):
             time.sleep(1)
             self.temp.append(self.serial_queue_infor.get())
             if len(self.temp)!= 0:
@@ -85,14 +85,10 @@ class SerialPort(object):
                 print("Capture date failed!")
                 return False
     def getPerValue(self,perCommand):
-        self.per_list = []
         self.send_command_to_serial(perCommand)
         time.sleep(1)
-        self.per_list.append(self.serial_queue_infor.get())
-        if re.match(r"[0-9]",self.per_list[0]):
-            return self.per_list[0]
-        else:
-            return self.per_list[0].strip().split(":")[1]
+        self.perValue = self.serial_queue_infor.get().strip().split(":")
+        return self.perValue[0] if len(self.perValue) == 1 else self.perValue[1]
         
 if __name__ == "__main__":
     DVBC_CHIP_Serial = SerialPort("COM4")

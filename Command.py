@@ -126,6 +126,7 @@ Instrument_Setting_Command={
                                    "64QAM":"DTMB:CONS C64\n",
                                    "256QAM":"DTMB:CONS C256\n"},
                      "AwgnValue":"NOIS:CN ",
+                     "BW":"DTMB:CHAN BW_",
                      "WorkMode":DTMB_workMode
                      },
              "DVBC":{"Modulation":{"16QAM":"DVBC:CONS C16\n",
@@ -149,7 +150,8 @@ Instrument_Setting_Command={
     "BTC":{"DTMB":{"Modulation":{"16QAM":"DTMB:CONS C16\n",
                                    "32QAM":"DTMB:CONS C32\n",
                                    "64QAM":"DTMB:CONS C64\n",
-                                   "256QAM":"DTMB:CONS C256\n"}
+                                   "256QAM":"DTMB:CONS C256\n"},
+                   "BW":"DTMB:CHAN BW_"
                      },
              "DVBC":{"Modulation":{"16QAM":"DVBC:CONS C16\n",
                                    "32QAM":"DVBC:CONS C32\n",
@@ -171,7 +173,7 @@ Instrument_Setting_Command={
                       }
              }  
  }
-
+ProfileTypeDict = {"1":"SPAT","2":"RICE","3":"PDOP","4":"RAYL","5":"CPH"}
 DVBC_Set_InstrumentDict = {
     "16QAM":"DVBC:CONS C16\n",
     "32QAM":"DVBC:CONS C32\n",
